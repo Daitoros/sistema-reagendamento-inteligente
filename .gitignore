@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+
+# Ambientes virtuais
+.venv/
+venv/
+env/
+
+# Banco de dados SQLite local gerado em execução
+*.db
+*.sqlite
+*.sqlite3
+
+# Variáveis de ambiente e sistema
+.env
+.DS_Store
+Thumbs.db

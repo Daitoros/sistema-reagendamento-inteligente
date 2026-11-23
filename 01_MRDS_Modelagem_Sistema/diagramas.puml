@@ -1,0 +1,190 @@
+' ============================================================================
+' Sistema de Reagendamento Inteligente — Diagramas PlantUML
+' Autores: Davi Aires Bastos Medeiros e Yuri da Silva Araújo
+' Renderize este arquivo no PlantUML / VS Code PlantUML / plantuml.com
+' ============================================================================
+
+@startuml 01_Diagrama_de_Classes
+title Diagrama de Classes — Sistema de Reagendamento Inteligente
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam roundcorner 6
+
+class MotorIA {
+  -regrasPriorizacao: List<String>
+  +acionarReagendamento(usuario: Usuario, sessao: SessaoEstudo): dict
+  -buscarJanelasLivres(usuario: Usuario, deadline: Date): List<Janela>
+  -fragmentarSessao(sessao: SessaoEstudo, janelas: List<Janela>): List<SessaoEstudo>
+  -validarLimiteDiario(usuario: Usuario, data: Date, horasAdicionais: float): Boolean
+}
+
+class Usuario {
+  -id: UUID
+  -nome: String
+  -email: String
+  -limiteHorasDiarias: Integer
+  -turnosProdutivos: List<String>
+  +adicionarCompromisso(compromisso: CompromissoFixo): void
+  +reportarImprevisto(sessao: SessaoEstudo): void
+  +concluirSessao(sessao: SessaoEstudo): void
+}
+
+class Disciplina {
+  -id: UUID
+  -usuario_id: UUID
+  -nome: String
+  -cargaHorariaTotal: Integer
+  -dataLimite: Date
+  -grauDificuldade: Integer
+  +calcularHorasPendentes(): Integer
+}
+
+class CompromissoFixo {
+  -id: UUID
+  -usuario_id: UUID
+  -titulo: String
+  -dataHoraInicio: DateTime
+  -dataHoraFim: DateTime
+  -recorrente: Boolean
+  +verificarConflito(inicio: DateTime, fim: DateTime): Boolean
+}
+
+class SessaoEstudo {
+  -id: UUID
+  -usuario_id: UUID
+  -disciplina_id: UUID
+  -dataHoraInicio: DateTime
+  -dataHoraFim: DateTime
+  -status: StatusSessao
+  +alterarStatus(novoStatus: StatusSessao): void
+  +obterDuracao(): Integer
+}
+
+enum StatusSessao {
+  AGENDADO
+  CONCLUIDO
+  ATRASADO
+  CANCELADO
+}
+
+MotorIA ..> Usuario : analisa >
+MotorIA ..> CompromissoFixo : respeita >
+MotorIA ..> SessaoEstudo : remaneja >
+
+Usuario "1" -- "*" Disciplina : cursa >
+Usuario "1" -- "*" CompromissoFixo : possui >
+Usuario "1" -- "*" SessaoEstudo : realiza >
+Disciplina "1" *-- "*" SessaoEstudo : dividida em >
+SessaoEstudo --> StatusSessao : possui
+@enduml
+
+@startuml 02_Diagrama_Casos_de_Uso
+title Diagrama de Casos de Uso — Sistema de Reagendamento Inteligente
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+actor "Estudante" as Estudante #LightSkyBlue
+actor "Motor de IA" as MotorIA #LightSkyBlue
+
+rectangle "Sistema de Reagendamento Inteligente" #C5E898 {
+  usecase "Cadastrar Perfil" as UC01 #FFD166
+  usecase "Cadastrar Compromisso Fixo" as UC02 #FFD166
+  usecase "Cadastrar Disciplina / Meta" as UC03 #FFD166
+  usecase "Consultar Agenda" as UC04 #FFD166
+  usecase "Cadastrar Sessão de Estudo" as UC05 #FFD166
+  usecase "Concluir Sessão de Estudo" as UC06 #FFD166
+  usecase "Informar Imprevisto" as UC07 #FFD166
+
+  usecase "Reagendar Sessão de Estudo" as UC08 #8AC926
+  usecase "Fragmentar Sessão de Estudo" as UC09 #8AC926
+  usecase "Verificar Disponibilidade de Horários" as UC10 #8AC926
+  usecase "Priorizar Metas por Deadline" as UC11 #8AC926
+  usecase "Enviar Notificação de Reagendamento" as UC12 #8AC926
+}
+
+Estudante -- UC01
+Estudante -- UC02
+Estudante -- UC03
+Estudante -- UC04
+Estudante -- UC05
+Estudante -- UC06
+Estudante -- UC07
+
+UC07 ..> UC08 : <<Include>>
+UC08 ..> UC10 : <<Include>>
+UC11 ..> UC08 : <<Extend>>
+UC09 ..> UC08 : <<Extend>>
+UC12 ..> UC08 : <<Extend>>
+
+UC08 -- MotorIA
+@enduml
+
+@startuml 03_Diagrama_DER_MER
+title Modelo Entidade-Relacionamento (Físico) — Sistema de Reagendamento Inteligente
+hide circle
+skinparam linetype ortho
+skinparam shadowing false
+
+entity "usuarios" as usuarios {
+  *id : TEXT <<PK, UUID>>
+  --
+  *nome : TEXT
+  *email : TEXT <<UK>>
+  *limite_horas_diarias : INTEGER
+  *turnos_produtivos : TEXT
+  *criado_em : TEXT
+  *atualizado_em : TEXT
+}
+
+entity "compromissos_fixos" as compromissos {
+  *id : TEXT <<PK, UUID>>
+  --
+  *usuario_id : TEXT <<FK>>
+  *titulo : TEXT
+  *data_hora_inicio : TEXT
+  *data_hora_fim : TEXT
+  *recorrente : INTEGER
+}
+
+entity "disciplinas" as disciplinas {
+  *id : TEXT <<PK, UUID>>
+  --
+  *usuario_id : TEXT <<FK>>
+  *nome : TEXT
+  *carga_horaria_total : INTEGER
+  *data_limite : TEXT
+  *grau_dificuldade : INTEGER
+}
+
+entity "sessoes_estudo" as sessoes {
+  *id : TEXT <<PK, UUID>>
+  --
+  *usuario_id : TEXT <<FK>>
+  *disciplina_id : TEXT <<FK>>
+  *data_hora_inicio : TEXT
+  *data_hora_fim : TEXT
+  *status : TEXT
+  sessao_origem_id : TEXT <<FK>>
+}
+
+entity "notificacoes" as notificacoes {
+  *id : TEXT <<PK, UUID>>
+  --
+  *usuario_id : TEXT <<FK>>
+  sessao_id : TEXT <<FK>>
+  *titulo : TEXT
+  *mensagem : TEXT
+  detalhes_json : TEXT
+  *lida : INTEGER
+  *criado_em : TEXT
+}
+
+usuarios ||--o{ compromissos : possui
+usuarios ||--o{ disciplinas : cursa
+usuarios ||--o{ sessoes : realiza
+disciplinas ||--o{ sessoes : "dividida em"
+sessoes |o--o{ sessoes : "fragmentada de"
+usuarios ||--o{ notificacoes : recebe
+sessoes |o--o{ notificacoes : origina
+@enduml
